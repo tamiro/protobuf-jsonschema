@@ -69,6 +69,15 @@ Compiler.prototype.compile = function(type) {
   }
   
   delete this.root.used;
+  emptyDefs = [];
+  for([k,v] of Object.entries(this.root.definitions)) {
+    if (!v)
+      emptyDefs.push(k)
+  }
+  for(k in emptyDefs){
+    delete this.root.definitions[emptyDefs[k]];
+  }
+  
   return this.root;
 };
 
@@ -94,7 +103,11 @@ Compiler.prototype.resolve = function(type, from, base, key) {
     // If already defined, reuse
     if (this.root.definitions[id])
       return { $ref: '#/definitions/' + id };
-  
+        
+      // Mark as used if not an Enum
+    if (base && !this.root.used[id] && !this.enums[id])
+        this.root.used[id] = [base, key];
+    
     // Compile the message or enum
     var res;
     if (this.messages[id])
@@ -109,10 +122,6 @@ Compiler.prototype.resolve = function(type, from, base, key) {
         this.root.definitions[id] = res;
         res = { $ref: '#/definitions/' + id };
       }
-      
-      // Mark as used if not an Enum
-      if (base && !this.root.used[id] && !this.enums[id])
-        this.root.used[id] = [base, key];
     
       return res;
     }
